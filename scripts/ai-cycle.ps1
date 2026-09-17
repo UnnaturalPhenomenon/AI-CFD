@@ -80,13 +80,13 @@ Make only scoped changes, run VERIFY, and stop when DONE is satisfied.
 '@
 
     if ($DryRun) {
-        Write-Host "[DRY RUN] codex exec --sandbox workspace-write --ephemeral <implementation prompt>"
+        Write-Host "[DRY RUN] codex exec --model gpt-5.6-terra --sandbox workspace-write --ephemeral <implementation prompt>"
         return
     }
 
     $logPath = Join-Path $logDirectory 'codex-implement.log'
     Invoke-CheckedExternalCommand -Name 'Codex implementation' -LogPath $logPath -Command {
-        & codex exec --sandbox workspace-write --ephemeral $prompt
+        & codex exec --model gpt-5.6-terra --sandbox workspace-write --ephemeral $prompt
     } | Out-Null
 }
 
@@ -139,13 +139,13 @@ Do not refactor. Run VERIFY and stop. Do not invoke another reviewer.
 '@
 
     if ($DryRun) {
-        Write-Host "[DRY RUN] codex exec --sandbox workspace-write --ephemeral <fix prompt>"
+        Write-Host "[DRY RUN] codex exec --model gpt-5.6-terra --sandbox workspace-write --ephemeral <fix prompt>"
         return
     }
 
     $logPath = Join-Path $logDirectory 'codex-fix.log'
     Invoke-CheckedExternalCommand -Name 'Codex correction' -LogPath $logPath -Command {
-        & codex exec --sandbox workspace-write --ephemeral $prompt
+        & codex exec --model gpt-5.6-terra --sandbox workspace-write --ephemeral $prompt
     } | Out-Null
 }
 
@@ -191,4 +191,7 @@ try {
 } finally {
     Pop-Location
 }
+
+
+
 
