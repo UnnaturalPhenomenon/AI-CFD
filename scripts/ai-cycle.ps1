@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [ValidateSet('check', 'implement', 'review', 'fix', 'full')]
     [string]$Mode = 'check',
@@ -21,12 +21,25 @@ function Invoke-CheckedExternalCommand {
     )
 
     Write-Host "[$Name] starting..." -ForegroundColor Cyan
-    $output = & $Command 2>&1 | Tee-Object -FilePath $LogPath
-    $exitCode = $LASTEXITCODE
+
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+
+        $output = & $Command 2>&1 |
+            ForEach-Object { $_.ToString() } |
+            Tee-Object -FilePath $LogPath
+
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+
     if ($exitCode -ne 0) {
         throw "$Name failed with exit code $exitCode. See $LogPath"
     }
-    return @($output | ForEach-Object { $_.ToString() })
+
+    return @($output)
 }
 
 function Assert-ReadyTask {
@@ -100,13 +113,13 @@ Output findings only. Do not include a preamble, recap, praise, or code rewrite.
 '@
 
     if ($DryRun) {
-        Write-Host "[DRY RUN] claude -p <review prompt> --model sonnet --effort low --permission-mode plan --output-format text --no-session-persistence --max-turns 4"
+        Write-Host "[DRY RUN] claude -p <review prompt> --model sonnet --effort low --permission-mode plan --output-format text --no-session-persistence --max-turns 8"
         return
     }
 
     $logPath = Join-Path $logDirectory 'claude-review.log'
     $reviewOutput = Invoke-CheckedExternalCommand -Name 'Claude review' -LogPath $logPath -Command {
-        & claude -p $prompt --model sonnet --effort low --permission-mode plan --output-format text --no-session-persistence --max-turns 4
+        & claude -p $prompt --model sonnet --effort low --permission-mode plan --output-format text --no-session-persistence --max-turns 8
     }
 
     $reviewText = ($reviewOutput -join [Environment]::NewLine).Trim()
@@ -178,3 +191,4 @@ try {
 } finally {
     Pop-Location
 }
+
