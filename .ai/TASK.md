@@ -1,32 +1,30 @@
-STATUS: DRAFT
+STATUS: READY
 
 # Goal
 
-Replace this text with one measurable task.
+Verify that Codex implementation and Claude review can operate through the shared Git repository.
 
 # Scope
 
-- Allowed files or directories:
-- Explicitly excluded files or directories:
+- Allowed: `docs/agent-integration-check.md`
+- Excluded: every other file
 
 # Inputs
 
-- Required input data, case files, parameters, and assumptions:
+- Current repository state
 
 # Requirements
 
-- Preserve existing public interfaces unless stated otherwise.
-- Make the smallest change that satisfies the goal.
+1. Create `docs/agent-integration-check.md`.
+2. The file must contain exactly one line:
+   `Codex implementation reached the shared repository.`
+3. Do not modify any other file.
 
 # Verify
 
 ```powershell
-# Put deterministic verification commands here.
-# Example: python -m pytest tests/test_example.py -q
+$content = (Get-Content .\docs\agent-integration-check.md -Raw).Trim()
+if ($content -ne "Codex implementation reached the shared repository.") {
+    throw "Integration check failed."
+}
 ```
-
-# Done
-
-- State observable completion criteria.
-- Set `STATUS: READY` only after every section is complete.
-
