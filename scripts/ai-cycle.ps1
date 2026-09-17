@@ -92,24 +92,28 @@ Make only scoped changes, run VERIFY, and stop when DONE is satisfied.
 
 function Invoke-ClaudeReview {
     $prompt = @'
-Review the current git diff against .ai/TASK.md. Do not edit files.
+Review the current working tree against .ai/TASK.md.
+Do not edit files.
+
+Repository inspection:
+1. Run git status --short.
+2. Inspect both git diff and git diff --cached.
+3. Read every untracked file listed in TASK Scope.
+4. Do not treat an untracked scoped file as missing.
+5. Treat these paths as workflow metadata:
+   - .ai/TASK.md: requirements source
+   - .ai/REVIEW.md: review output
+   - .ai/logs/: runtime diagnostics
+6. Do not report workflow metadata changes as task scope violations.
 
 Check only:
 1. correctness
 2. regressions
 3. requirement violations
-4. missing or invalid verification
-5. unsafe resource/session cleanup
+4. verification completeness
 
-If there are no actionable issues, output exactly:
-PASS
-
-Otherwise output at most 5 findings in this exact form:
-1. BLOCKER|BUG|RISK path:line
-   problem: concise explanation
-   fix: smallest required correction
-
-Output findings only. Do not include a preamble, recap, praise, or code rewrite.
+Output exactly PASS if there are no actionable findings.
+Otherwise output at most 5 actionable findings.
 '@
 
     if ($DryRun) {
