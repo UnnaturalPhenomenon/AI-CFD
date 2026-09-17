@@ -1,0 +1,33 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Local AI run logs; TASK and REVIEW remain versioned.
+.ai/logs/
+
+# Large/generated simulation and training data.
+data/raw/
+data/processed/
+outputs/
+checkpoints/
+*.cas.h5
+*.dat.h5
+*.msh.h5
+*.npz
+*.zarr/
+
+# Local secrets and editor files.
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+
