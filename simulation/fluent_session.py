@@ -15,6 +15,7 @@ class FluentLaunchConfig:
     version: str = "2d"
     precision: str = "double"
     processor_count: int = 1
+    start_transcript: bool = False
     show_gui: bool = False
     mode: str = "solver"
 
@@ -29,6 +30,7 @@ class FluentLaunchConfig:
             "processor_count": self.processor_count,
             "ui_mode": "no_gui" if not self.show_gui else "gui",
             "mode": self.mode,
+            "start_transcript": self.start_transcript,
         }
 
 

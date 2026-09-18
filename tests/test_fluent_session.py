@@ -31,6 +31,7 @@ def test_launches_with_expected_pyfluent_arguments() -> None:
         "processor_count": 1,
         "ui_mode": "no_gui",
         "mode": "solver",
+        "start_transcript": False,
     }
 
 
