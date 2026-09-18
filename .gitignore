@@ -31,3 +31,5 @@ checkpoints/
 .vscode/
 .idea/
 
+# Fluent runtime transcript
+fluent-*.trn
