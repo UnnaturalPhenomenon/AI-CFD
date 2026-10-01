@@ -1,0 +1,21 @@
+case:
+  name: conduction_square
+  type: steady_conduction
+
+mesh:
+  file: mesh/conduction_square_32x32.msh
+
+fluent:
+  dimension: 2d
+  precision: double
+  processors: 1
+
+solver:
+  max_iterations: 300
+
+convergence:
+  residual_target: 1.0e-6
+
+output:
+  save_case: true
+  save_data: true
