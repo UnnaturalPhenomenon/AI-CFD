@@ -110,11 +110,20 @@ def main() -> int:
             residual_target=config.solver.residual_target,
             )
             print_convergence_result(convergence)
-
+            run_converged = convergence.converged
             print("[CASE] solution complete")
 
         print("[FLUENT] session closed")
+
+        if not run_converged:
+            print(
+                "[FAIL] case did not meet the convergence target",
+                file=sys.stderr,
+            )
+            return 1
+
         print("[OK] case run complete")
+        return 0
 
     except Exception:
         import traceback

@@ -16,8 +16,23 @@ def _validate_zones(
     zones: dict[str, list[str]],
     config: CaseConfig,
 ) -> None:
-    if config.domain.zone not in zones["solid"]:
-        available = ", ".join(zones["solid"]) or "<none>"
+    """Validate required Fluent zone groups and configured zones."""
+
+    solid_zones = zones.get("solid")
+    wall_zones = zones.get("wall")
+
+    if not isinstance(solid_zones, list):
+        raise SolverSetupError(
+            "Zone summary is missing a valid 'solid' list."
+        )
+
+    if not isinstance(wall_zones, list):
+        raise SolverSetupError(
+            "Zone summary is missing a valid 'wall' list."
+        )
+
+    if config.domain.zone not in solid_zones:
+        available = ", ".join(solid_zones) or "<none>"
 
         raise SolverSetupError(
             f"Solid cell zone '{config.domain.zone}' "
@@ -26,8 +41,8 @@ def _validate_zones(
         )
 
     for boundary in config.boundary_conditions:
-        if boundary.zone not in zones["wall"]:
-            available = ", ".join(zones["wall"]) or "<none>"
+        if boundary.zone not in wall_zones:
+            available = ", ".join(wall_zones) or "<none>"
 
             raise SolverSetupError(
                 f"Wall zone '{boundary.zone}' "

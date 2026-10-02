@@ -1,59 +1,78 @@
-# Minimal case-loading workflow
+# Add solver workflow unit tests
 
 STATUS: READY
 
 ## Goal
 
-Implement a minimal workflow that reads `case.yaml`, resolves its mesh path,
-starts the existing managed Fluent solver session, and loads the `.msh` mesh.
-The workflow must stop after mesh loading; it must not configure or solve the
-case.
+Replace the empty solver, solver-setup, and convergence test stubs with focused
+unit tests that verify their behavior without launching Fluent.
 
 ## Scope
 
-- Allowed: `simulation/case_config.py`, `simulation/mesh_loader.py`,
-  `scripts/run_case.py`, `tests/test_case_config.py`,
-  `tests/test_mesh_loader.py`
-- Reuse `simulation/fluent_session.py` as-is unless a blocking issue is found.
-- Excluded: solver setup, initialization, iterations, ML code, dependency
-  upgrades, and unrelated refactoring.
+- Allowed: `tests/test_solver.py`, `tests/test_solver_setup.py`,
+  `tests/test_convergence.py`
+- Read-only implementation references: `simulation/solver.py`,
+  `simulation/solver_setup.py`, `simulation/convergence.py`, and
+  `simulation/case_config.py`
+- Do not modify `scripts/run_case.py`, `simulation/solver_setup.py`, other
+  implementation files, existing tests, or the staged fixes for review finding
+  2.
+- Do not add dependencies, format unrelated files, or create a commit.
+- Do not start Fluent or run a manual integration test.
 
 ## Inputs
 
-- Input file: a YAML case configuration with `case.name` and `mesh.file`.
-- Mesh path: resolve a relative `mesh.file` from the directory containing
-  `case.yaml`.
-- Assumption: the input mesh is an existing Fluent `.msh` file and the current
-  managed solver session exposes Fluent's mesh-loading API.
+- The current solver setup, initialization, iteration, and convergence
+  implementations in `simulation/`.
+- Case/config data should be represented with small fixtures or
+  `SimpleNamespace` objects as appropriate.
+- Fluent sessions and settings must be fake objects; tests must not depend on an
+  Ansys installation, license, network access, or live Fluent process.
 
 ## Requirements
 
-1. Load and validate the case name and mesh path from `case.yaml`.
-2. Resolve the mesh path relative to `case.yaml` and fail clearly if the
-   configuration or mesh file is invalid or missing.
-3. Launch Fluent through the existing `managed_solver_session` context manager
-   and load the resolved mesh using the Fluent mesh-reading API.
-4. Close the managed session on both successful mesh loading and errors.
-5. Do not load a case file, configure models or boundary conditions, initialize
-   the solution, or run solver iterations.
-6. Unit tests must cover valid configuration loading and path resolution,
-   invalid or missing configuration inputs, mesh loading through a fake session,
-   and missing or unsupported mesh files. Pytest must not launch Fluent.
-7. Review the final git diff and test result. Report `PASS` or `BLOCKER` only,
-   with concrete reasons for any blocker.
+1. Add tests to `tests/test_solver_setup.py` verifying energy is set from the
+   config, material is created only when absent, configured density/specific
+   heat/thermal conductivity are assigned, the configured solid zone receives
+   the material, and temperature/heat-flux boundary conditions are applied.
+2. Add tests verifying solver setup rejects a missing or malformed solid/wall
+   zone list and rejects configured zones that are unavailable.
+3. Add tests to `tests/test_solver.py` verifying the initialization temperature
+   is set before standard initialization, the configured maximum iteration
+   count is passed to Fluent, energy convergence criteria use the configured
+   residual target while non-energy equations are not convergence-checked, and
+   `solve_case` invokes convergence configuration, initialization, and iteration
+   in that order.
+4. Add tests to `tests/test_convergence.py` verifying the latest energy
+   residual and iteration are selected, duplicate iteration entries resolve
+   to the last value, convergence uses an inclusive `residual <= target`
+   comparison, and the printed result reports iteration, residual, target, and
+   status.
+5. Add convergence error tests for missing monitor interfaces, missing residual
+   monitor sets, empty or malformed data, absent energy residuals, and
+   mismatched iteration/residual lengths.
+6. Keep assertions focused on observable API calls, assigned values, ordering,
+   and raised exceptions. Do not merely test private implementation details
+   when a public function can cover the behavior.
+7. Run the three new test files and the complete existing test suite. If a test
+   exposes an implementation defect, do not change implementation files under
+   this task; report the exact failing behavior as a blocker.
+8. Review the diff and ensure only the three allowed test files were changed.
 
 ## Verify
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest .\tests\test_case_config.py .\tests\test_mesh_loader.py -q
+.\.venv\Scripts\python.exe -m pytest .\tests\test_solver.py .\tests\test_solver_setup.py .\tests\test_convergence.py -q
+.\.venv\Scripts\python.exe -m pytest .\tests -q
+git diff --check
 ```
 
 ## Done
 
-- The focused verification command exits with code 0.
-- The workflow loads only the configured mesh and leaves solver setup and
-  calculation untouched.
-- Unit tests use temporary files and fake Fluent sessions; they do not start a
-  Fluent process.
-- The final git diff is reviewed and the final report follows the required
-  `PASS` or `BLOCKER` format.
+- All three previously empty test files contain meaningful behavior-focused
+  tests.
+- New tests pass without launching Fluent.
+- The full test-suite result is recorded accurately.
+- No implementation files or unrelated staged changes are modified.
+- Final report says `PASS` or `BLOCKER`; any blocker names the exact failing
+  test or uncovered behavior.
