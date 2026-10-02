@@ -5,17 +5,46 @@ case:
 mesh:
   file: mesh/conduction_square_32x32.msh
 
-fluent:
-  dimension: 2d
-  precision: double
-  processors: 1
+domain:
+  type: solid
+  zone: surface_body
 
+physics:
+  energy: true
+
+material:
+  name: conduction_solid
+  density: 1000.0
+  specific_heat: 1000.0
+  thermal_conductivity: 1.0
+
+boundary_conditions:
+  left:
+    zone: wall_hot
+    type: temperature
+    value: 400.0
+
+  right:
+    zone: wall_cold
+    type: temperature
+    value: 300.0
+
+  top:
+    zone: wall_adiabatic_top
+    type: heat_flux
+    value: 0.0
+
+  bottom:
+    zone: wall_adiabatic_bottom
+    type: heat_flux
+    value: 0.0
+
+validation:
+  type: linear_conduction
+  tolerance: 0.5
+  
 solver:
-  max_iterations: 300
-
-convergence:
-  residual_target: 1.0e-6
-
-output:
-  save_case: true
-  save_data: true
+  initialization: standard
+  initial_temperature: 350.0
+  max_iterations: 200
+  residual_target: 1.0e-8
