@@ -47,6 +47,15 @@ class SolverConfig:
     max_iterations: int
     residual_target: float
 
+@dataclass(frozen=True)
+class ValidationConfig:
+    type: str
+    axis: str
+    start_coordinate: float
+    end_coordinate: float
+    start_boundary: str
+    end_boundary: str
+    tolerance: float
 
 @dataclass(frozen=True)
 class CaseConfig:
@@ -60,6 +69,7 @@ class CaseConfig:
     material: MaterialConfig
     boundary_conditions: tuple[BoundaryConditionConfig, ...]
     solver: SolverConfig
+    validation: ValidationConfig
 
 
 def _require_mapping(data: dict[str, Any], key: str) -> dict[str, Any]:
@@ -126,10 +136,8 @@ def load_case_config(config_path: str | Path) -> CaseConfig:
     domain_section = _require_mapping(data, "domain")
     physics_section = _require_mapping(data, "physics")
     material_section = _require_mapping(data, "material")
-    bc_section = _require_mapping(
-        data,
-        "boundary_conditions",
-    )
+    bc_section = _require_mapping(data,"boundary_conditions",)
+    validation_section = _require_mapping(data, "validation",)
     solver_section = _require_mapping(data, "solver")
 
     initialization = _require_string(solver_section,"initialization","solver",)
@@ -307,8 +315,82 @@ def load_case_config(config_path: str | Path) -> CaseConfig:
     initial_temperature=initial_temperature,
     max_iterations=max_iterations,
     residual_target=residual_target,
-)
+    )
 
+    validation_type = _require_string(
+        validation_section,
+        "type",
+        "validation",
+    )
+
+    if validation_type != "linear_conduction":
+        raise CaseConfigError(
+            "Only 'linear_conduction' validation "
+            "is supported in this version."
+        )
+
+    axis = _require_string(
+        validation_section,
+        "axis",
+        "validation",
+    ).lower()
+
+    if axis not in {"x", "y", "z"}:
+        raise CaseConfigError(
+            "'validation.axis' must be x, y, or z."
+        )
+
+    start_coordinate = _require_number(
+        validation_section,
+        "start_coordinate",
+        "validation",
+    )
+
+    end_coordinate = _require_number(
+        validation_section,
+        "end_coordinate",
+        "validation",
+    )
+
+    if end_coordinate <= start_coordinate:
+        raise CaseConfigError(
+            "'validation.end_coordinate' "
+            "must be greater than start_coordinate."
+        )
+
+    start_boundary = _require_string(
+        validation_section,
+        "start_boundary",
+        "validation",
+    )
+
+    end_boundary = _require_string(
+        validation_section,
+        "end_boundary",
+        "validation",
+    )
+
+    tolerance = _require_number(
+        validation_section,
+        "tolerance",
+        "validation",
+    )
+
+    if tolerance <= 0:
+        raise CaseConfigError(
+            "'validation.tolerance' must be positive."
+        )
+
+    validation = ValidationConfig(
+        type=validation_type,
+        axis=axis,
+        start_coordinate=start_coordinate,
+        end_coordinate=end_coordinate,
+        start_boundary=start_boundary,
+        end_boundary=end_boundary,
+        tolerance=tolerance,
+    )
+    
     return CaseConfig(
         name=name,
         case_type=case_type,
@@ -319,4 +401,5 @@ def load_case_config(config_path: str | Path) -> CaseConfig:
         material=material,
         boundary_conditions=tuple(boundaries),
         solver=solver,
+        validation=validation,
     )

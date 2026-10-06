@@ -19,12 +19,12 @@ material:
   thermal_conductivity: 1.0
 
 boundary_conditions:
-  left:
+  hot:
     zone: wall_hot
     type: temperature
     value: 400.0
 
-  right:
+  cold:
     zone: wall_cold
     type: temperature
     value: 300.0
@@ -41,8 +41,13 @@ boundary_conditions:
 
 validation:
   type: linear_conduction
-  tolerance: 0.5
-  
+  axis: x
+  start_coordinate: -0.5
+  end_coordinate: 0.5
+  start_boundary: cold
+  end_boundary: hot
+  tolerance: 0.1
+
 solver:
   initialization: standard
   initial_temperature: 350.0

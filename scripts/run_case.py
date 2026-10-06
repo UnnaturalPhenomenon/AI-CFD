@@ -26,6 +26,10 @@ from simulation.convergence import (
     evaluate_convergence,
     print_convergence_result,
 )
+from simulation.validation import (
+    print_validation_result,
+    validate_linear_conduction,
+)
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -110,14 +114,32 @@ def main() -> int:
             residual_target=config.solver.residual_target,
             )
             print_convergence_result(convergence)
-            run_converged = convergence.converged
+
+            validation = None
+
+            if convergence.converged:
+                validation = validate_linear_conduction(
+                    session=session,
+                    config=config,
+                )
+                print_validation_result(validation)
+            else:
+                print(
+                    "[VALIDATION] skipped because "
+                    "the solution did not converge."
+                )
+            run_passed = (
+                convergence.converged
+                and validation is not None
+                and validation.passed
+            )
             print("[CASE] solution complete")
 
         print("[FLUENT] session closed")
 
-        if not run_converged:
+        if not run_passed:
             print(
-                "[FAIL] case did not meet the convergence target",
+                "[FAIL] case run did not pass all checks",
                 file=sys.stderr,
             )
             return 1

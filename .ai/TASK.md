@@ -1,78 +1,91 @@
-# Add solver workflow unit tests
+# Validate Fluent linear-conduction workflow
 
 STATUS: READY
 
 ## Goal
 
-Replace the empty solver, solver-setup, and convergence test stubs with focused
-unit tests that verify their behavior without launching Fluent.
+Complete and verify the linear-conduction validation workflow with fake-array
+unit tests, a full test run, a real Fluent case run, and an AI review that ends
+with `PASS`.
 
 ## Scope
 
-- Allowed: `tests/test_solver.py`, `tests/test_solver_setup.py`,
-  `tests/test_convergence.py`
-- Read-only implementation references: `simulation/solver.py`,
-  `simulation/solver_setup.py`, `simulation/convergence.py`, and
-  `simulation/case_config.py`
-- Do not modify `scripts/run_case.py`, `simulation/solver_setup.py`, other
-  implementation files, existing tests, or the staged fixes for review finding
-  2.
-- Do not add dependencies, format unrelated files, or create a commit.
-- Do not start Fluent or run a manual integration test.
+- Relevant implementation and configuration: `simulation/validation.py`,
+  `simulation/case_config.py`, `scripts/run_case.py`,
+  `cases/conduction_square/case.yaml`
+- Relevant tests: `tests/test_validation.py`,
+  `tests/test_case_config.py`
+- Read and review any related changed files required to understand the current
+  feature, but do not modify unrelated user changes.
+- Preserve all existing staged and unstaged user work. Do not reset, revert,
+  stage, commit, or push files.
+- Do not add dependencies or perform broad refactoring.
 
 ## Inputs
 
-- The current solver setup, initialization, iteration, and convergence
-  implementations in `simulation/`.
-- Case/config data should be represented with small fixtures or
-  `SimpleNamespace` objects as appropriate.
-- Fluent sessions and settings must be fake objects; tests must not depend on an
-  Ansys installation, license, network access, or live Fluent process.
+- Example case: `cases/conduction_square/case.yaml`
+- Fluent mesh: the mesh path configured by that case file.
+- Validation mode: linear conduction using fake centroid and temperature arrays
+  in unit tests, and the configured licensed Fluent installation for the manual
+  case run.
+- Fluent run requires the configured Ansys installation, valid license, and
+  project `.venv` dependencies. If unavailable, report the concrete blocker;
+  do not claim the integration run passed.
 
 ## Requirements
 
-1. Add tests to `tests/test_solver_setup.py` verifying energy is set from the
-   config, material is created only when absent, configured density/specific
-   heat/thermal conductivity are assigned, the configured solid zone receives
-   the material, and temperature/heat-flux boundary conditions are applied.
-2. Add tests verifying solver setup rejects a missing or malformed solid/wall
-   zone list and rejects configured zones that are unavailable.
-3. Add tests to `tests/test_solver.py` verifying the initialization temperature
-   is set before standard initialization, the configured maximum iteration
-   count is passed to Fluent, energy convergence criteria use the configured
-   residual target while non-energy equations are not convergence-checked, and
-   `solve_case` invokes convergence configuration, initialization, and iteration
-   in that order.
-4. Add tests to `tests/test_convergence.py` verifying the latest energy
-   residual and iteration are selected, duplicate iteration entries resolve
-   to the last value, convergence uses an inclusive `residual <= target`
-   comparison, and the printed result reports iteration, residual, target, and
-   status.
-5. Add convergence error tests for missing monitor interfaces, missing residual
-   monitor sets, empty or malformed data, absent energy residuals, and
-   mismatched iteration/residual lengths.
-6. Keep assertions focused on observable API calls, assigned values, ordering,
-   and raised exceptions. Do not merely test private implementation details
-   when a public function can cover the behavior.
-7. Run the three new test files and the complete existing test suite. If a test
-   exposes an implementation defect, do not change implementation files under
-   this task; report the exact failing behavior as a blocker.
-8. Review the diff and ensure only the three allowed test files were changed.
+1. Ensure `tests/test_validation.py` uses fake Fluent metadata and fake
+   centroid/temperature arrays; unit tests must never start Fluent.
+2. Verify an exact linear temperature field returns `passed=True`, a field
+   whose maximum error exceeds tolerance returns `passed=False`, and malformed
+   centroid dimension or unsupported/unavailable validation axes raise
+   `ValidationError`.
+3. Verify the test doubles match the installed PyFluent solution-variable API
+   used by `simulation/validation.py` and exercise the public
+   `validate_linear_conduction` function.
+4. Run the focused validation tests first, then the entire test suite. Fix
+   failures only when they are caused by this validation workflow; preserve
+   unrelated user edits and report unrelated failures as blockers.
+5. After all unit tests pass, run the real Fluent case from the project root:
+
+   ```powershell
+   .\.venv\Scripts\python.exe .\scripts\run_case.py .\cases\conduction_square\case.yaml
+   ```
+
+   Require exit code 0 and successful convergence and physics-validation output.
+   Do not treat a printed completion message alone as success if the runner
+   reports a failed convergence or validation result.
+6. Only after the focused tests, full tests, and real Fluent run pass, run the
+   repository AI review:
+
+   ```powershell
+   .\ai.ps1 review
+   ```
+
+   Read `.ai/REVIEW.md`. If it contains actionable findings, validate them,
+   apply only relevant fixes without discarding user work, rerun the affected
+   tests and Fluent case, and run `review` again. Repeat until review output is
+   exactly `PASS`, with a maximum of two correction rounds; otherwise report a
+   concrete blocker.
+7. Do not report `PASS` unless both the complete pytest suite and the real
+   Fluent run succeeded and `.ai/REVIEW.md` contains exactly `PASS`.
 
 ## Verify
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest .\tests\test_solver.py .\tests\test_solver_setup.py .\tests\test_convergence.py -q
+.\.venv\Scripts\python.exe -m pytest .\tests\test_validation.py .\tests\test_case_config.py -q
 .\.venv\Scripts\python.exe -m pytest .\tests -q
-git diff --check
+.\.venv\Scripts\python.exe .\scripts\run_case.py .\cases\conduction_square\case.yaml
+.\ai.ps1 review
+Get-Content .\.ai\REVIEW.md -Raw
 ```
 
 ## Done
 
-- All three previously empty test files contain meaningful behavior-focused
-  tests.
-- New tests pass without launching Fluent.
-- The full test-suite result is recorded accurately.
-- No implementation files or unrelated staged changes are modified.
-- Final report says `PASS` or `BLOCKER`; any blocker names the exact failing
-  test or uncovered behavior.
+- Focused validation tests and the full test suite pass.
+- The actual Fluent case exits successfully and reports both convergence and
+  linear-conduction validation as passing.
+- AI review output is exactly `PASS`.
+- User changes remain intact; no unrelated files are modified or staged.
+- Final report states the test result, Fluent-run result, and review result. If
+  any required stage cannot pass, report `BLOCKER` with the exact evidence.
